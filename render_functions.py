@@ -44,10 +44,10 @@ def render_dungeon_level(
 
     console.print(x = x, y = y, string = f"Dungeon level: {dungeon_level}")
 
-def render_names_at_mouse_location(
+def render_names_at_cursor_location(
         console: Console, x: int, y: int, engine: Engine
 ) -> None:
-    mouse_x, mouse_y = engine.mouse_location
+    mouse_x, mouse_y = engine.cursor_location
 
     names_at_mouse_location = get_names_at_location(
         x = mouse_x, y = mouse_y, game_map = engine.game_map
