@@ -19,6 +19,8 @@ class Inventory(BaseComponent):
         Removes an item from the inventory and restores it to the game map at the player's current location
         """
         self.items.remove(item)
+        if item.equippable and self.parent.equipment.item_is_equipped(item):
+            self.parent.equipment.toggle_equip(item)
         item.place(self.parent.x, self.parent.y, self.gamemap)
 
         self.engine.message_log.add_message(f"You dropped the {item.name}.")
