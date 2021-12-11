@@ -21,7 +21,7 @@ class Engine:
 
     def __init__(self, player: Actor):
         self.message_log = MessageLog()
-        self.mouse_location = (0, 0)
+        self.cursor_location = (0, 0)
         self.player = player
 
     def handle_enemy_turns(self) -> None:
@@ -61,7 +61,7 @@ class Engine:
             location = (0, 47)
         )
 
-        render_functions.render_names_at_mouse_location(
+        render_functions.render_names_at_cursor_location(
             console = console,
             x = 21,
             y = 44,

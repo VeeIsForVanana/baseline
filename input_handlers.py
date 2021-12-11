@@ -62,6 +62,13 @@ CONFIRM_KEYS = {
     tcod.event.K_KP_ENTER
 }
 
+CURSOR_Y_KEYS = {
+    tcod.event.K_UP: -1,
+    tcod.event.K_DOWN: 1,
+    tcod.event.K_PAGEUP: -10,
+    tcod.event.K_PAGEDOWN: 10
+}
+
 ActionOrHandler = Union[Action, "BaseEventHandler"]
 """
 An event handler return value which can trigger an action or switch active handlers
@@ -71,8 +78,9 @@ If an action is returned it will be attempted and if it's valid then
 MainGameEventHandler will become the active handler.
 """
 
+
 class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
-    def handle_events(self, event:tcod.event.Event) -> BaseEventHandler:
+    def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle an event and return the next active event handler."""
         state = self.dispatch(event)
         if isinstance(state, BaseEventHandler):
@@ -158,8 +166,7 @@ class EventHandler(BaseEventHandler):
         self.engine.render(console)
 
     def ev_mousemotion(self, event: tcod.event.MouseMotion) -> None:
-        if self.engine.game_map.in_bounds(event.tile.x, event.tile.y):
-            self.engine.mouse_location = event.tile.x, event.tile.y
+        return None
 
 
 class MainGameEventHandler(EventHandler):
@@ -208,8 +215,9 @@ class GameOverEventHandler(EventHandler):
         """Handle exiting out of a finished game"""
         if os.path.exists("savegame.sav"):
             os.remove("savegame.sav")   # Deletes the active save file
-        raise exceptions.QuitWithoutSaving()    # Avoid saving a finished game
         print("Save Deleted.")
+        raise exceptions.QuitWithoutSaving()    # Avoid saving a finished game
+
 
     def ev_quit(self, event: tcod.event.Quit) -> None:
         self.on_quit()
@@ -220,13 +228,6 @@ class GameOverEventHandler(EventHandler):
         if event.sym == tcod.event.K_v:
 
             return HistoryViewer(self.engine, self)
-
-CURSOR_Y_KEYS = {
-    tcod.event.K_UP: -1,
-    tcod.event.K_DOWN: 1,
-    tcod.event.K_PAGEUP: -10,
-    tcod.event.K_PAGEDOWN: 10
-}
 
 
 class HistoryViewer(EventHandler):
@@ -260,7 +261,7 @@ class HistoryViewer(EventHandler):
         )
         log_console.blit(console, 3, 3)
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         # Fancy conditional movement to make it feel right.
         if event.sym in CURSOR_Y_KEYS:
             adjust = CURSOR_Y_KEYS[event.sym]
@@ -277,7 +278,7 @@ class HistoryViewer(EventHandler):
             self.cursor = 0 # Move directly to the top message
         elif event.sym == tcod.event.K_END:
             self.cursor = self.log_length - 1 # Move directly to the last message.
-        else: # Any other key moves back to the main game state.
+        else: # Any other key moves back to the last state.
             return self.previous_handler
 
 
@@ -287,7 +288,6 @@ class AskUserEventHandler(EventHandler):
     def handle_action(self, action: Optional[ActionOrHandler]) -> bool:
         """Return to the main even handler when a valid action was performed."""
         if super().handle_action(action):
-            return MainGameEventHandler(self.engine)
             return True
         return False
 
@@ -303,13 +303,6 @@ class AskUserEventHandler(EventHandler):
         }:
             return None
         return self.on_exit()
-
-    def ev_mousemotion(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
-        """By default any mouse click exits this input handler."""
-        return self.on_exit
-
-    def ev_mousemotion(self, event: tcod.event.MouseMotion) -> None:
-        return None
 
     def on_exit(self) -> Optional[ActionOrHandler]:
         """
@@ -425,14 +418,6 @@ class LevelUpEventHandler(AskUserEventHandler):
 
         return super().ev_keydown(event)
 
-    def ev_mousebuttondown(
-            self, event: tcod.event.MouseButtonDown
-    ) -> Optional[ActionOrHandler]:
-        """
-        Don't allow the player to click to exit the menu, like normal.
-        """
-        return None
-
 
 class SelectIndexHandler(AskUserEventHandler):
     """Handles asking the user for an index on the map."""
@@ -441,12 +426,12 @@ class SelectIndexHandler(AskUserEventHandler):
         """Sets the cursor to the player when this handler is constructed."""
         super().__init__(engine)
         player = self.engine.player
-        engine.mouse_location = player.x, player.y
+        engine.cursor_location = player.x, player.y
 
     def on_render(self, console: tcod.Console) -> None:
         """Highlight the tile under the cursor."""
         super().on_render(console)
-        x, y = self.engine.mouse_location
+        x, y = self.engine.cursor_location
         console.tiles_rgb["bg"][x, y] = color.white
         console.tiles_rgb["fg"][x, y] = color.black
 
@@ -462,28 +447,18 @@ class SelectIndexHandler(AskUserEventHandler):
             if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
                 modifier *= 20
 
-            x, y = self.engine.mouse_location
+            x, y = self.engine.cursor_location
             dx, dy = MOVE_KEYS[key]
             x += dx * modifier
             y += dy * modifier
             # Clamp the cursor index to the map size.
             x = max(0, min(x, self.engine.game_map.width - 1))
             y = max(0, min(y, self.engine.game_map.height - 1))
-            self.engine.mouse_location = x, y
+            self.engine.cursor_location = x, y
             return None
         elif key in CONFIRM_KEYS:
-            return self.on_index_selected(*self.engine.mouse_location)
+            return self.on_index_selected(*self.engine.cursor_location)
         return super().ev_keydown(event)
-
-    def ev_mousemotion(self, event: tcod.event.MouseMotion) -> Optional[ActionOrHandler]:
-        return None
-
-    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[ActionOrHandler]:
-        """Left click confirms a selection."""
-        if self.engine.game_map.in_bounds(*event.tile):
-            if event.button == 1:
-                return self.on_index_selected(*event.tile)
-        return super().ev_mousebuttondown(event)
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
         """Called when an index is selected."""
@@ -530,7 +505,7 @@ class AreaRangedAttackHandler(SelectIndexHandler):
         """Highlight the tile under the cursor."""
         super().on_render(console)
 
-        x, y = self.engine.mouse_location
+        x, y = self.engine.cursor_location
 
         # Draw a rectangle around the targeted area, so the player can see the affected tiles.
         console.draw_frame(
