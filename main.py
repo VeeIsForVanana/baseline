@@ -7,6 +7,7 @@ import color
 import exceptions
 import input_handlers
 import setup_game
+import render_standards
 
 def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
     """If the current event handler has an active Engine then save it."""
@@ -15,8 +16,8 @@ def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
         print("Game saved.")
 
 def main() -> None:
-    screen_width = 80
-    screen_height = 50
+    screen_width = render_standards.screen_width
+    screen_height = render_standards.screen_height
 
     tileset = tcod.tileset.load_tilesheet(
         "dejavu10x10_gs_tc.png", 32, 8, tcod.tileset.CHARMAP_TCOD
