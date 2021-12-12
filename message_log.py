@@ -4,6 +4,8 @@ import textwrap
 import tcod
 
 import color
+import render_standards
+
 
 class Message:
     def __init__(self, text: str, fg: Tuple[int, int, int]):
@@ -41,7 +43,17 @@ class MessageLog:
         'x', 'y', 'width', 'height' is the rectangular region to render onto
         the console.
         """
-        self.render_messages(console, x, y, width, height, self.messages)
+        console.draw_frame(
+            title = "[v]iew message history",
+            x = x,
+            y = y,
+            width = width,
+            height = height,
+            fg = color.menu_text,
+            bg = color.black,
+            clear = True
+        )
+        self.render_messages(console, x + 1, y + 1, width - 2, height - 2, self.messages)
 
     @staticmethod
     def wrap(string: str, width: int) -> Iterable[str]:

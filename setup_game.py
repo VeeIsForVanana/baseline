@@ -9,6 +9,7 @@ from typing import Optional, List
 
 import tcod
 import color
+import render_standards
 from engine import Engine
 import entity_factories
 from game_map import GameWorld
@@ -21,8 +22,8 @@ background_image = tcod.image.load("menu_background.png")[:, :, :3]
 
 def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
-    map_width = 80
-    map_height = 43
+    map_width = render_standards.map_width
+    map_height = render_standards.map_height
 
     room_max_size = 10
     room_min_size = 6

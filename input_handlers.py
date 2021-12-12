@@ -7,6 +7,7 @@ from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union, List, Iterab
 import tcod.event
 
 import actions
+import render_functions
 from actions import (
     Action,
     BumpAction,
@@ -16,6 +17,7 @@ from actions import (
 )
 import color
 import exceptions
+import render_standards
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -314,47 +316,50 @@ class AskUserEventHandler(EventHandler):
 
 
 class CharacterScreenEventHandler(AskUserEventHandler):
-    TITLE = "Character Information"
+    TITLE = "character"
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
 
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
-
+        x = render_standards.character_screen_x
         y = 0
 
-        width = len(self.TITLE) + 4
-
-        console.draw_frame(
-            x = x,
-            y = y,
-            width = width,
-            height = 7,
-            title = self.TITLE,
-            clear = True,
-            fg = (255, 255, 255),
-            bg = (0, 0, 0),
+        render_functions.render_character_screen(
+            console=console,
+            engine=self.engine,
+            x=x,
+            y=y,
+            width=render_standards.character_screen_width,
+            height=render_standards.character_screen_height,
+            in_use=True
         )
 
         console.print(
-            x = x + 1, y = y + 1, string = f"Level: {self.engine.player.level.current_level}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard,
+            string = f"Level: {self.engine.player.level.current_level}"
         )
         console.print(
-            x = x + 1, y = y + 2, string = f"XP: {self.engine.player.level.current_xp}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 1,
+            string = f"XP: {self.engine.player.level.current_xp}"
         )
         console.print(
-            x = x + 1,
-            y = y + 3,
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 2,
             string = f"XP for next level: {self.engine.player.level.experience_to_next_level}"
         )
         console.print(
-            x = x + 1, y = y + 4, string = f"Attack: {self.engine.player.fighter.power}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 4,
+            string = f"Attack: {self.engine.player.fighter.base_power} + "
+                     f"{self.engine.player.equipment.power_bonus}"
         )
         console.print(
-            x = x + 1, y = y + 5, string = f"Defense: {self.engine.player.fighter.defense}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 5,
+            string = f"Defense: {self.engine.player.fighter.base_defense} + "
+                     f"{self.engine.player.equipment.power_bonus}"
         )
 
 
@@ -449,8 +454,8 @@ class LevelUpEventHandler(OptionSelectionHandler):
 
         self.selection = list(enumerate([
             ["Max HP", 20, self.engine.player.fighter.max_hp],
-            ["Base Attack", 5, self.engine.player.fighter.base_power],
-            ["Base Defense", 5, self.engine.player.fighter.base_defense],
+            ["Base Attack", 1, self.engine.player.fighter.base_power],
+            ["Base Defense", 1, self.engine.player.fighter.base_defense],
         ]))
 
         if self.engine.player.x <= 30:
@@ -486,11 +491,11 @@ class LevelUpEventHandler(OptionSelectionHandler):
         player = self.engine.player
 
         if self.present_selection == 0:
-            player.level.increase_max_hp()
+            player.level.increase_max_hp(amount = 20)
         elif self.present_selection == 1:
-            player.level.increase_power()
+            player.level.increase_power(amount = 1)
         else:
-            player.level.increase_defense()
+            player.level.increase_defense(amount = 1)
 
         if not player.level.requires_level_up:
             return self.on_exit()
@@ -498,6 +503,15 @@ class LevelUpEventHandler(OptionSelectionHandler):
 
 class LookHandler(SelectScreenIndexHandler):
     """Lets the player look around using the keyboard."""
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        render_functions.render_names_at_cursor_location(
+            console=console,
+            x=1,
+            y=2,
+            engine=self.engine
+        )
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
         """Return to main handler."""
@@ -559,7 +573,7 @@ class InventoryEventHandler(OptionSelectionHandler):
     What happens then depends on the subclass
     """
 
-    TITLE = "<missing title>"
+    title = "<missing title>"
 
     def on_render(self, console: tcod.Console) -> None:
         """
@@ -572,29 +586,18 @@ class InventoryEventHandler(OptionSelectionHandler):
         super().on_render(console)
         number_of_items_in_inventory = len(self.selection)
 
-        height = min(number_of_items_in_inventory + 2, console.height)
+        x = render_standards.inventory_x
+        y = render_standards.inventory_y
 
-        if height <= 3:
-            height = 3
-
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
-
-        y = 0
-
-        width = len(self.TITLE) + 4
-
-        console.draw_frame(
+        render_functions.render_inventory_screen(
             x = x,
             y = y,
-            width = width,
-            height = height,
-            title = self.TITLE,
-            clear = True,
-            fg = (255, 255, 255),
-            bg = (0, 0, 0)
+            width = render_standards.inventory_width,
+            height = render_standards.screen_height,
+            title = self.title,
+            engine = self.engine,
+            in_use = True,
+            console = console
         )
 
         if number_of_items_in_inventory > 0:
@@ -607,15 +610,15 @@ class InventoryEventHandler(OptionSelectionHandler):
                     item_string = f"{item_string} (E)"
 
                 console.print(
-                    x + 1,
-                    y + i + 1,
+                    x + render_standards.padding_standard,
+                    y + i + render_standards.padding_standard,
                     item_string,
                     fg = (color.maroon if i == self.present_selection else color.menu_text),
                     bg = (color.white if i == self.present_selection else color.black)
                 )
 
         else:
-            console.print(x + 1, y + 1, "(Empty)")
+            console.print(x + render_standards.padding_standard, y + render_standards.padding_standard, "(Empty)")
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Called when the user selects a valid item"""
@@ -628,7 +631,7 @@ class InventoryEventHandler(OptionSelectionHandler):
 class InventoryActivateHandler(InventoryEventHandler):
     """Handle using an inventory item."""
 
-    TITLE = "Select an item to use"
+    title = "accessing items"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Return the action for the selected item."""
@@ -642,6 +645,8 @@ class InventoryActivateHandler(InventoryEventHandler):
 
 class InventoryDropHandler(InventoryEventHandler):
     """Handle dropping an inventory item"""
+
+    title = "dropping item"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Drop this item."""
