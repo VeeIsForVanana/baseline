@@ -83,7 +83,8 @@ def render_inventory_screen(
     if not in_use:
         inventory_dict = {}
         for instance in engine.player.inventory.items:
-            inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
+            if not engine.player.equipment.item_is_equipped(instance):
+                inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
 
         for i, instance in enumerate(inventory_dict.keys()):
             console.print(
@@ -108,40 +109,62 @@ def render_character_screen(
         x = x,
         y = y,
         width = width,
-        height = height,
+        height = (height if not in_use else render_standards.screen_height),
         title = "[c]haracter screen",
         fg = color.menu_text,
-        bg = (color.black if not in_use else color.white)
+        bg = (color.inactive_window_bg if not in_use else color.black)
     )
+    if not in_use:
+        render_bar(
+            console=console,
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard,
+            current_value = engine.player.fighter.hp,
+            maximum_value = engine.player.fighter.max_hp,
+            total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+        )
 
-    render_bar(
-        console=console,
-        x = x + render_standards.padding_standard,
-        y = y + render_standards.padding_standard,
-        current_value = engine.player.fighter.hp,
-        maximum_value = engine.player.fighter.max_hp,
-        total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
-    )
+        render_bar(
+            console = console,
+            x = x + render_standards.padding_standard,
+            y = (y + render_standards.padding_standard) + 3,
+            current_value = engine.player.fighter.power,
+            maximum_value = 100,
+            total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+            name = "attack"
+        )
 
-    render_bar(
-        console = console,
-        x = x + render_standards.padding_standard,
-        y = (y + render_standards.padding_standard) + 3,
-        current_value = engine.player.fighter.power,
-        maximum_value = 100,
-        total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
-        name = "attack"
-    )
+        render_bar(
+            console=console,
+            x=x + render_standards.padding_standard,
+            y=(y + render_standards.padding_standard) + 5,
+            current_value=engine.player.fighter.defense,
+            maximum_value=100,
+            total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
+            name = "defense"
+        )
 
-    render_bar(
-        console=console,
-        x=x + render_standards.padding_standard,
-        y=(y + render_standards.padding_standard) + 5,
-        current_value=engine.player.fighter.defense,
-        maximum_value=100,
-        total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
-        name = "defense"
-    )
+        weapon, armor = engine.player.equipment.weapon, engine.player.equipment.armor
+
+        equipment_info_offset = 8
+        if weapon or armor:
+            console.print(
+                x=x + render_standards.padding_standard,
+                y=(y + render_standards.padding_standard) + equipment_info_offset,
+                string = "Equipment"
+            )
+
+            console.print(
+                x=x + render_standards.padding_standard + 2,
+                y=(y + render_standards.padding_standard) + equipment_info_offset + 1,
+                string=f"Weapon: {weapon.name if weapon else 'None equipped'}"
+            )
+
+            console.print(
+                x=x + render_standards.padding_standard + 2,
+                y=(y + render_standards.padding_standard) + equipment_info_offset + 2,
+                string=f"Armor: {armor.name if armor else 'None equipped'}"
+            )
 
 def wrap(string: str, width: int) -> Iterable[str]:
     """Return a wrapped text message."""

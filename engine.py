@@ -58,14 +58,7 @@ class Engine:
         render_functions.render_dungeon_level(
             console = console,
             dungeon_level = self.game_world.current_floor,
-            location = (0, 47)
-        )
-
-        render_functions.render_names_at_cursor_location(
-            console = console,
-            x = 21,
-            y = 44,
-            engine = self
+            location = (1, 1)
         )
 
         render_functions.render_inventory_screen(

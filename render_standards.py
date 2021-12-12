@@ -5,7 +5,7 @@ from __future__ import annotations
 # Console screen standards
 
 screen_height = 50
-screen_width = 100
+screen_width = 110
 
 # Map size standards
 

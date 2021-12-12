@@ -316,49 +316,50 @@ class AskUserEventHandler(EventHandler):
 
 
 class CharacterScreenEventHandler(AskUserEventHandler):
-    TITLE = "Character Information"
+    TITLE = "character"
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
 
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
-
+        x = render_standards.character_screen_x
         y = 0
 
-        width = len(self.TITLE) + 4
-
-        console.draw_frame(
-            x = x,
-            y = y,
-            width = width,
-            height = 7,
-            title = self.TITLE,
-            clear = True,
-            fg = (255, 255, 255),
-            bg = (0, 0, 0),
+        render_functions.render_character_screen(
+            console=console,
+            engine=self.engine,
+            x=x,
+            y=y,
+            width=render_standards.character_screen_width,
+            height=render_standards.character_screen_height,
+            in_use=True
         )
 
         console.print(
-            x = x + 1, y = y + 1, string = f"Level: {self.engine.player.level.current_level}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard,
+            string = f"Level: {self.engine.player.level.current_level}"
         )
         console.print(
-            x = x + 1, y = y + 2, string = f"XP: {self.engine.player.level.current_xp}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 1,
+            string = f"XP: {self.engine.player.level.current_xp}"
         )
         console.print(
-            x = x + 1,
-            y = y + 3,
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 2,
             string = f"XP for next level: {self.engine.player.level.experience_to_next_level}"
         )
         console.print(
-            x = x + 1, y = y + 4, string = f"Attack: {self.engine.player.fighter.base_power} + "
-                                           f"{self.engine.player.equipment.power_bonus}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 4,
+            string = f"Attack: {self.engine.player.fighter.base_power} + "
+                     f"{self.engine.player.equipment.power_bonus}"
         )
         console.print(
-            x = x + 1, y = y + 5, string = f"Defense: {self.engine.player.fighter.base_defense} + "
-                                           f"{self.engine.player.equipment.power_bonus}"
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + 5,
+            string = f"Defense: {self.engine.player.fighter.base_defense} + "
+                     f"{self.engine.player.equipment.power_bonus}"
         )
 
 
@@ -502,6 +503,15 @@ class LevelUpEventHandler(OptionSelectionHandler):
 
 class LookHandler(SelectScreenIndexHandler):
     """Lets the player look around using the keyboard."""
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+        render_functions.render_names_at_cursor_location(
+            console=console,
+            x=1,
+            y=2,
+            engine=self.engine
+        )
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
         """Return to main handler."""

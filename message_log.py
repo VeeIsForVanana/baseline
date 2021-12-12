@@ -44,7 +44,7 @@ class MessageLog:
         the console.
         """
         console.draw_frame(
-            title = "log [h]istory",
+            title = "[v]iew message history",
             x = x,
             y = y,
             width = width,
