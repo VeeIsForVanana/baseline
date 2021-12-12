@@ -7,6 +7,7 @@ from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union, List, Iterab
 import tcod.event
 
 import actions
+import render_functions
 from actions import (
     Action,
     BumpAction,
@@ -16,6 +17,7 @@ from actions import (
 )
 import color
 import exceptions
+import render_standards
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -561,7 +563,7 @@ class InventoryEventHandler(OptionSelectionHandler):
     What happens then depends on the subclass
     """
 
-    TITLE = "<missing title>"
+    title = "<missing title>"
 
     def on_render(self, console: tcod.Console) -> None:
         """
@@ -574,29 +576,18 @@ class InventoryEventHandler(OptionSelectionHandler):
         super().on_render(console)
         number_of_items_in_inventory = len(self.selection)
 
-        height = min(number_of_items_in_inventory + 2, console.height)
+        x = render_standards.inventory_x
+        y = render_standards.inventory_y
 
-        if height <= 3:
-            height = 3
-
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
-
-        y = 0
-
-        width = len(self.TITLE) + 4
-
-        console.draw_frame(
+        render_functions.render_inventory_screen(
             x = x,
             y = y,
-            width = width,
-            height = height,
-            title = self.TITLE,
-            clear = True,
-            fg = (255, 255, 255),
-            bg = (0, 0, 0)
+            width = render_standards.inventory_width,
+            height = render_standards.screen_height,
+            title = self.title,
+            engine = self.engine,
+            in_use = True,
+            console = console
         )
 
         if number_of_items_in_inventory > 0:
@@ -609,15 +600,15 @@ class InventoryEventHandler(OptionSelectionHandler):
                     item_string = f"{item_string} (E)"
 
                 console.print(
-                    x + 1,
-                    y + i + 1,
+                    x + render_standards.padding_standard,
+                    y + i + render_standards.padding_standard,
                     item_string,
                     fg = (color.maroon if i == self.present_selection else color.menu_text),
                     bg = (color.white if i == self.present_selection else color.black)
                 )
 
         else:
-            console.print(x + 1, y + 1, "(Empty)")
+            console.print(x + render_standards.padding_standard, y + render_standards.padding_standard, "(Empty)")
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Called when the user selects a valid item"""
@@ -630,7 +621,7 @@ class InventoryEventHandler(OptionSelectionHandler):
 class InventoryActivateHandler(InventoryEventHandler):
     """Handle using an inventory item."""
 
-    TITLE = "Select an item to use"
+    title = "accessing items"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Return the action for the selected item."""
@@ -644,6 +635,8 @@ class InventoryActivateHandler(InventoryEventHandler):
 
 class InventoryDropHandler(InventoryEventHandler):
     """Handle dropping an inventory item"""
+
+    title = "dropping item"
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Drop this item."""

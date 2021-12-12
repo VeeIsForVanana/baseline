@@ -86,15 +86,6 @@ class Engine:
             height = render_standards.character_screen_height
         )
 
-        render_functions.render_bar(
-            console=console,
-            x=render_standards.character_screen_x + render_standards.padding_standard,
-            y=render_standards.character_screen_y + render_standards.padding_standard,
-            current_value=self.player.fighter.hp,
-            maximum_value=self.player.fighter.max_hp,
-            total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
-        )
-
     def save_as(self, filename: str) -> None:
         """Save this Engine instance as a compressed file."""
         save_data = lzma.compress(pickle.dumps(self))

@@ -22,19 +22,28 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     return names.capitalize()
 
 def render_bar(
-        console: Console, x: int, y: int, current_value: int, maximum_value: int, total_width: int
+        console: Console, x: int, y: int, current_value: int, maximum_value: int, total_width: int, name: str = "HP",
 ) -> None:
     bar_width = int(float(current_value) / maximum_value * total_width)
 
     console.draw_rect(x = x, y = y + 1, width = total_width, height = 1, ch = 1, bg = color.bar_empty)
 
-    if bar_width > 0:
+    if bar_width > 0 and current_value < maximum_value:
         console.draw_rect(
-            x = x, y = y + 1,width = bar_width, height = 1, ch = 1, bg = color.bar_filled
+            x = x, y = y + 1, width = bar_width, height = 1, ch = 1, bg = color.bar_filled
+        )
+
+    elif bar_width > 0 and current_value >= maximum_value:
+        console.draw_rect(
+            x=x, y=y + 1, width=total_width, height=1, ch=1, bg=color.bar_overload
         )
 
     console.print(
-        x = x, y = y, string = f"HP: {current_value} / {maximum_value}", fg = color.bar_text
+        x = x,
+        y = y,
+        string = f"{name}: {current_value} / {maximum_value} "
+                 f"{'O_O' if current_value > maximum_value else ''}",
+        fg = color.bar_text
     )
 
 def render_dungeon_level(
@@ -59,33 +68,41 @@ def render_names_at_cursor_location(
     console.print(x = x, y = y, string = names_at_mouse_location)
 
 def render_inventory_screen(
-        console: Console, x: int, y: int, width: int, height: int, engine: Engine,
+        console: Console, x: int, y: int, width: int, height: int, engine: Engine, in_use: bool = False, title: str = None
 ) -> None:
     console.draw_frame(
         x = x,
         y = y,
         width = width,
         height = height,
-        title = "[i]nventory",
+        title = ("access [i]nventory" if title is None else title),
         fg = color.menu_text,
-        bg = color.inactive_window_bg,
+        bg = (color.inactive_window_bg if not in_use else color.black),
     )
 
-    inventory_dict = {}
+    if not in_use:
+        inventory_dict = {}
+        for instance in engine.player.inventory.items:
+            inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
 
-    for instance in engine.player.inventory.items:
-        inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
+        for i, instance in enumerate(inventory_dict.keys()):
+            console.print(
+                x = x + render_standards.padding_standard,
+                y = y + render_standards.padding_standard + i,
+                string = f"{instance} - {inventory_dict[instance]}",
+                fg = color.menu_text,
+            )
 
-    for i, instance in enumerate(inventory_dict.keys()):
         console.print(
-            x = x + render_standards.padding_standard,
-            y = y + render_standards.padding_standard + i,
-            string = f"{instance} - {inventory_dict[instance]}",
-            fg = color.menu_text,
+            x=x + int(width / 2 - len("[d]rop items") / 2),
+            y=y + height - 1,
+            string="[d]rop items",
+            fg=color.inactive_window_bg,
+            bg=color.white
         )
 
 def render_character_screen(
-        console: Console, x: int, y: int, width: int, height: int, engine: Engine,
+        console: Console, x: int, y: int, width: int, height: int, engine: Engine, in_use: bool = False
 ) -> None:
     console.draw_frame(
         x = x,
@@ -94,7 +111,36 @@ def render_character_screen(
         height = height,
         title = "[c]haracter screen",
         fg = color.menu_text,
-        bg = color.inactive_window_bg
+        bg = (color.black if not in_use else color.white)
+    )
+
+    render_bar(
+        console=console,
+        x = x + render_standards.padding_standard,
+        y = y + render_standards.padding_standard,
+        current_value = engine.player.fighter.hp,
+        maximum_value = engine.player.fighter.max_hp,
+        total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+    )
+
+    render_bar(
+        console = console,
+        x = x + render_standards.padding_standard,
+        y = (y + render_standards.padding_standard) + 3,
+        current_value = engine.player.fighter.power,
+        maximum_value = 100,
+        total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+        name = "attack"
+    )
+
+    render_bar(
+        console=console,
+        x=x + render_standards.padding_standard,
+        y=(y + render_standards.padding_standard) + 5,
+        current_value=engine.player.fighter.defense,
+        maximum_value=100,
+        total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
+        name = "defense"
     )
 
 def wrap(string: str, width: int) -> Iterable[str]:
