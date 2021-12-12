@@ -93,8 +93,8 @@ class MainMenu(input_handlers.BaseEventHandler):
                 self.console.width // 2,
                 self.console.height // 2 - 2 + i,
                 text.ljust(menu_width),
-                fg = color.menu_text,
-                bg = (color.white if i == self.present_selection else color.black),
+                fg = (color.menu_text if i != self.present_selection else color.selection),
+                bg = (color.white if i == self.present_selection else None),
                 alignment = tcod.CENTER,
                 bg_blend = tcod.BKGND_ALPHA(64),
             )

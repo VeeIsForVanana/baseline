@@ -34,6 +34,7 @@ def main() -> None:
         handler: input_handlers.BaseEventHandler = setup_game.MainMenu(root_console)
 
         try:
+            turn_counter: int = 0
             while True:
                 root_console.clear()
                 if isinstance(handler, setup_game.MainMenu):
@@ -46,6 +47,7 @@ def main() -> None:
                     for event in tcod.event.wait():
                         context.convert_event(event)
                         handler = handler.handle_events(event)
+                        turn_counter += 1
                 except Exception:   # Handle exceptions in game.
                     traceback.print_exc()   # Print error to stderr.
                     # Then print the error to the message log.

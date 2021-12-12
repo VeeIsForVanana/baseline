@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union
+from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union, List, Iterable
 
 import tcod.event
 
@@ -293,7 +293,7 @@ class AskUserEventHandler(EventHandler):
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         """By default any key exists this input handler."""
-        if event.sym in{    # Ignore modifier keys
+        if event.sym in {    # Ignore modifier keys
             tcod.event.K_LSHIFT,
             tcod.event.K_RSHIFT,
             tcod.event.K_LCTRL,
@@ -312,6 +312,38 @@ class AskUserEventHandler(EventHandler):
         """
         return MainGameEventHandler(self.engine)
 
+
+class OptionSelectionHandler(AskUserEventHandler):
+    """
+    Handles the creation of an iterable selection object, an iterator for the present selection
+    along with a method for the selection confirm through the enter key and moving the present
+    selection.
+    Subclasses are expected to implement how the selection is confirmed in the first place,
+    and the selection itself.
+    """
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+        self.selection: Iterable = []
+        self.present_selection: int = 0
+        self.option_visual_base_height: int = 0
+
+    def confirm_selection(self):
+        """
+        If you're seeing this something has gone wrong and this function is not
+        overridden for the subclass. Will return NotImplementedError.
+        """
+        raise NotImplementedError()
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+        if key == tcod.event.K_UP:
+            self.present_selection = max(0, self.present_selection - 1)
+        elif key == tcod.event.K_DOWN:
+            self.present_selection = min(len(self.selection) - 1, self.present_selection + 1)
+        elif key in CONFIRM_KEYS:
+            return self.confirm_selection()
+        else:
+            return super().ev_keydown(event)
 
 class CharacterScreenEventHandler(AskUserEventHandler):
     TITLE = "Character Information"
@@ -358,21 +390,31 @@ class CharacterScreenEventHandler(AskUserEventHandler):
         )
 
 
-class LevelUpEventHandler(AskUserEventHandler):
+class LevelUpEventHandler(OptionSelectionHandler):
     TITLE = "Level Up"
+
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+        self.option_visual_base_height = 4
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
 
+        self.selection = list(enumerate([
+            ["Max HP", 20, self.engine.player.fighter.max_hp],
+            ["Base Attack", 5, self.engine.player.fighter.base_power],
+            ["Base Defense", 5, self.engine.player.fighter.base_defense],
+        ]))
+
         if self.engine.player.x <= 30:
-            x = 40
+            x = 30
         else:
             x = 0
 
         console.draw_frame(
             x = x,
             y = 0,
-            width = 35,
+            width = 45,
             height = 8,
             title = self.TITLE,
             clear = True,
@@ -380,43 +422,31 @@ class LevelUpEventHandler(AskUserEventHandler):
             bg = (0, 0, 0),
         )
 
-        console.print(x = x + 1, y = 1, string = "Congratulations! You level up!")
-        console.print(x = x + 1, y = 2, string = "Select an attribute to increase.")
+        console.print(x = x + 1, y = 1, string = f"You are now level "
+                                                 f"{self.engine.player.level.current_level + 1}")
+        console.print(x = x + 1, y = 2, string = "Select a bonus.")
 
-        console.print(
-            x = x + 1,
-            y = 4,
-            string = f"a) Constitution (+20 HP, from {self.engine.player.fighter.max_hp}"
-        )
-        console.print(
-            x = x + 1,
-            y = 5,
-            string = f"b) Strength (+1 attack, from {self.engine.player.fighter.power}"
-        )
-        console.print(
-            x = x + 1,
-            y = 6,
-            string = f"c) Agility (+1 defense, from {self.engine.player.fighter.defense}"
-        )
+        for i, option in self.selection:
+            console.print(
+                x = x + 1,
+                y = self.option_visual_base_height + i,
+                string = f"+{option[1]} {option[0]} (from the current value {option[2]})",
+                fg = (color.selection if i is self.present_selection else color.menu_text),
+                bg = (color.white if i is self.present_selection else None)
+            )
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+    def confirm_selection(self):
         player = self.engine.player
-        key = event.sym
-        index = key - tcod.event.K_a
 
-        if 0 <= index <= 2:
-            if index == 0:
-                player.level.increase_max_hp()
-            elif index == 1:
-                player.level.increase_power()
-            else:
-                player.level.increase_defense()
+        if self.present_selection == 0:
+            player.level.increase_max_hp()
+        elif self.present_selection == 1:
+            player.level.increase_power()
         else:
-            self.engine.message_log.add_message("Invalid entry.", color.invalid)
+            player.level.increase_defense()
 
-            return None
-
-        return super().ev_keydown(event)
+        if not player.level.requires_level_up:
+            return self.on_exit()
 
 
 class SelectIndexHandler(AskUserEventHandler):
@@ -521,7 +551,7 @@ class AreaRangedAttackHandler(SelectIndexHandler):
         return self.callback((x, y))
 
 
-class InventoryEventHandler(AskUserEventHandler):
+class InventoryEventHandler(OptionSelectionHandler):
     """
     This handler lets the user select an item.
 
