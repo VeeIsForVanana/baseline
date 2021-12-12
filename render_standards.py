@@ -35,3 +35,7 @@ message_log_y = map_height
 
 message_log_width = map_width
 message_log_height = screen_height - message_log_y
+
+# Padding Standard (Distance between border of frame and content)
+
+padding_standard = 2

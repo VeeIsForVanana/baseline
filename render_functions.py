@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Tuple, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING, Iterable
 
 import color
+import textwrap
+
 import render_standards
 
 if TYPE_CHECKING:
@@ -69,6 +71,19 @@ def render_inventory_screen(
         bg = color.inactive_window_bg,
     )
 
+    inventory_dict = {}
+
+    for instance in engine.player.inventory.items:
+        inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
+
+    for i, instance in enumerate(inventory_dict.keys()):
+        console.print(
+            x = x + render_standards.padding_standard,
+            y = y + render_standards.padding_standard + i,
+            string = f"{instance} - {inventory_dict[instance]}",
+            fg = color.menu_text,
+        )
+
 def render_character_screen(
         console: Console, x: int, y: int, width: int, height: int, engine: Engine,
 ) -> None:
@@ -81,3 +96,10 @@ def render_character_screen(
         fg = color.menu_text,
         bg = color.inactive_window_bg
     )
+
+def wrap(string: str, width: int) -> Iterable[str]:
+    """Return a wrapped text message."""
+    for line in string.splitlines():    # Handle newlines in messages.
+        yield from textwrap.wrap(
+            line, width, expand_tabs = True
+        )

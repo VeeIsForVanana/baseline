@@ -88,11 +88,11 @@ class Engine:
 
         render_functions.render_bar(
             console=console,
-            x=render_standards.character_screen_x + 1,
-            y=render_standards.character_screen_y + 2,
+            x=render_standards.character_screen_x + render_standards.padding_standard,
+            y=render_standards.character_screen_y + render_standards.padding_standard,
             current_value=self.player.fighter.hp,
             maximum_value=self.player.fighter.max_hp,
-            total_width=render_standards.character_screen_width - 2,
+            total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
         )
 
     def save_as(self, filename: str) -> None:

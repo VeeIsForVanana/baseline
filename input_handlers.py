@@ -351,10 +351,12 @@ class CharacterScreenEventHandler(AskUserEventHandler):
             string = f"XP for next level: {self.engine.player.level.experience_to_next_level}"
         )
         console.print(
-            x = x + 1, y = y + 4, string = f"Attack: {self.engine.player.fighter.power}"
+            x = x + 1, y = y + 4, string = f"Attack: {self.engine.player.fighter.base_power} + "
+                                           f"{self.engine.player.equipment.power_bonus}"
         )
         console.print(
-            x = x + 1, y = y + 5, string = f"Defense: {self.engine.player.fighter.defense}"
+            x = x + 1, y = y + 5, string = f"Defense: {self.engine.player.fighter.base_defense} + "
+                                           f"{self.engine.player.equipment.power_bonus}"
         )
 
 
@@ -449,8 +451,8 @@ class LevelUpEventHandler(OptionSelectionHandler):
 
         self.selection = list(enumerate([
             ["Max HP", 20, self.engine.player.fighter.max_hp],
-            ["Base Attack", 5, self.engine.player.fighter.base_power],
-            ["Base Defense", 5, self.engine.player.fighter.base_defense],
+            ["Base Attack", 1, self.engine.player.fighter.base_power],
+            ["Base Defense", 1, self.engine.player.fighter.base_defense],
         ]))
 
         if self.engine.player.x <= 30:
@@ -486,11 +488,11 @@ class LevelUpEventHandler(OptionSelectionHandler):
         player = self.engine.player
 
         if self.present_selection == 0:
-            player.level.increase_max_hp()
+            player.level.increase_max_hp(amount = 20)
         elif self.present_selection == 1:
-            player.level.increase_power()
+            player.level.increase_power(amount = 1)
         else:
-            player.level.increase_defense()
+            player.level.increase_defense(amount = 1)
 
         if not player.level.requires_level_up:
             return self.on_exit()
