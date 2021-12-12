@@ -22,8 +22,6 @@ def main() -> None:
         "dejavu10x10_gs_tc.png", 32, 8, tcod.tileset.CHARMAP_TCOD
     )
 
-    handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
-
     with tcod.context.new_terminal(
         screen_width,
         screen_height,
@@ -32,10 +30,16 @@ def main() -> None:
         vsync = True,
     ) as context:
         root_console = tcod.Console(screen_width, screen_height, order = "F")
+
+        handler: input_handlers.BaseEventHandler = setup_game.MainMenu(root_console)
+
         try:
             while True:
                 root_console.clear()
-                handler.on_render(console = root_console)
+                if isinstance(handler, setup_game.MainMenu):
+                    handler.on_render()
+                else:
+                    handler.on_render(console = root_console)
                 context.present(root_console)
 
                 try:

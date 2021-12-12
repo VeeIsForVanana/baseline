@@ -5,7 +5,7 @@ import copy
 import lzma
 import pickle
 import traceback
-from typing import Optional
+from typing import Optional, List
 
 import tcod
 import color
@@ -13,6 +13,7 @@ from engine import Engine
 import entity_factories
 from game_map import GameWorld
 import input_handlers
+import render_functions
 
 # Load the background image and remove the alpha channel.
 background_image = tcod.image.load("menu_background.png")[:, :, :3]
@@ -63,33 +64,37 @@ def load_game(filename: str) -> Engine:
 class MainMenu(input_handlers.BaseEventHandler):
     """Handle the main menu rendering and input."""
 
-    def on_render(self, console: tcod.Console) -> None:
-        """Render the main menu on a background image."""
-        console.draw_semigraphics(background_image, 0, 0)
+    def __init__(self, console: tcod.Console):
+        """Initializes the MainMenu with a console and cursor position"""
+        self.console = console
+        self.selection = list(enumerate(["New Game", "Continue Game", "Quit",]))
+        self.present_selection = 0
 
-        console.print(
-            console.width // 2,
-            console.height // 2 - 4,
+    def on_render(self) -> None:
+        """Render the main menu on a background image."""
+        self.console.draw_semigraphics(background_image, 0, 0)
+
+        self.console.print(
+            self.console.width // 2,
+            self.console.height // 2 - 4,
             "TOMBS OF THE ANCIENT KINGS",
             fg = color.menu_title,
             alignment = tcod.CENTER
         )
-        console.print(
-            console.width // 2,
-            console.height // 2 - 2,
+        self.console.print(
+            self.console.width // 2,
+            self.console.height // 2 - 2,
             "By VEE"
         )
 
         menu_width = 24
-        for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[Q] Quit"]
-        ):
-            console.print(
-                console.width // 2,
-                console.height // 2 - 2 + i,
+        for i, text in self.selection:
+            self.console.print(
+                self.console.width // 2,
+                self.console.height // 2 - 2 + i,
                 text.ljust(menu_width),
                 fg = color.menu_text,
-                bg = color.black,
+                bg = (color.white if i == self.present_selection else color.black),
                 alignment = tcod.CENTER,
                 bg_blend = tcod.BKGND_ALPHA(64),
             )
@@ -97,15 +102,24 @@ class MainMenu(input_handlers.BaseEventHandler):
     def ev_keydown(
             self, event: tcod.event.KeyDown
     ) -> Optional[input_handlers.BaseEventHandler]:
-        if event.sym in (tcod.event.K_q, tcod.event.K_ESCAPE):
+        if event.sym == tcod.event.K_ESCAPE:
             raise SystemExit()
-        elif event.sym == tcod.event.K_c:
-            try:
-                return input_handlers.MainGameEventHandler(load_game("savegame.sav"))
-            except FileNotFoundError:
-                return input_handlers.PopupMessage(self, "No saved game to load.")
-            except Exception as exc:
-                traceback.print_exc()   # Print to stderr.
-                return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
         elif event.sym == tcod.event.K_n:
             return input_handlers.MainGameEventHandler(new_game())
+        elif event.sym == tcod.event.K_UP:
+            self.present_selection = max(self.present_selection - 1, 0)
+        elif event.sym == tcod.event.K_DOWN:
+            self.present_selection = min(self.present_selection + 1, len(self.selection) - 1)
+        elif event.sym == tcod.event.K_RETURN or event.sym == tcod.event.K_KP_ENTER:
+            if self.present_selection == 0:
+                return input_handlers.MainGameEventHandler(new_game())
+            elif self.present_selection == 1:
+                try:
+                    return input_handlers.MainGameEventHandler(load_game("savegame.sav"))
+                except FileNotFoundError:
+                    return input_handlers.PopupMessage(self, "No saved game to load.")
+                except Exception as exc:
+                    traceback.print_exc()   # Print to stderr.
+                    return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
+            elif self.present_selection == 2:
+                raise SystemExit()
