@@ -313,38 +313,6 @@ class AskUserEventHandler(EventHandler):
         return MainGameEventHandler(self.engine)
 
 
-class OptionSelectionHandler(AskUserEventHandler):
-    """
-    Handles the creation of an iterable selection object, an iterator for the present selection
-    along with a method for the selection confirm through the enter key and moving the present
-    selection.
-    Subclasses are expected to implement how the selection is confirmed in the first place,
-    and the selection itself.
-    """
-    def __init__(self, engine: Engine):
-        super().__init__(engine)
-        self.selection: Iterable = []
-        self.present_selection: int = 0
-        self.option_visual_base_height: int = 0
-
-    def confirm_selection(self):
-        """
-        If you're seeing this something has gone wrong and this function is not
-        overridden for the subclass. Will return NotImplementedError.
-        """
-        raise NotImplementedError()
-
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
-        key = event.sym
-        if key == tcod.event.K_UP:
-            self.present_selection = max(0, self.present_selection - 1)
-        elif key == tcod.event.K_DOWN:
-            self.present_selection = min(len(self.selection) - 1, self.present_selection + 1)
-        elif key in CONFIRM_KEYS:
-            return self.confirm_selection()
-        else:
-            return super().ev_keydown(event)
-
 class CharacterScreenEventHandler(AskUserEventHandler):
     TITLE = "Character Information"
 
@@ -388,6 +356,85 @@ class CharacterScreenEventHandler(AskUserEventHandler):
         console.print(
             x = x + 1, y = y + 5, string = f"Defense: {self.engine.player.fighter.defense}"
         )
+
+
+class SelectScreenIndexHandler(AskUserEventHandler):
+    """Handles asking the user for an index on the map."""
+
+    def __init__(self, engine: Engine):
+        """Sets the cursor to the player when this handler is constructed."""
+        super().__init__(engine)
+        player = self.engine.player
+        engine.cursor_location = player.x, player.y
+
+    def on_render(self, console: tcod.Console) -> None:
+        """Highlight the tile under the cursor."""
+        super().on_render(console)
+        x, y = self.engine.cursor_location
+        console.tiles_rgb["bg"][x, y] = color.white
+        console.tiles_rgb["fg"][x, y] = color.black
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        """Check for key movement or confirmation keys."""
+        key = event.sym
+        if key in MOVE_KEYS:
+            modifier = 1    # Holding modifier keys will speed up key movement.
+            if event.mod & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+                modifier *= 5
+            if event.mod & (tcod.event.KMOD_LCTRL | tcod.event.KMOD_RCTRL):
+                modifier *= 10
+            if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
+                modifier *= 20
+
+            x, y = self.engine.cursor_location
+            dx, dy = MOVE_KEYS[key]
+            x += dx * modifier
+            y += dy * modifier
+            # Clamp the cursor index to the map size.
+            x = max(0, min(x, self.engine.game_map.width - 1))
+            y = max(0, min(y, self.engine.game_map.height - 1))
+            self.engine.cursor_location = x, y
+            return None
+        elif key in CONFIRM_KEYS:
+            return self.on_index_selected(*self.engine.cursor_location)
+        return super().ev_keydown(event)
+
+    def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
+        """Called when an index is selected."""
+        raise NotImplementedError()
+
+
+class OptionSelectionHandler(AskUserEventHandler):
+    """
+    Handles the creation of an iterable selection object, an iterator for the present selection
+    along with a method for the selection confirm through the enter key and moving the present
+    selection.
+    Subclasses are expected to implement how the selection is confirmed in the first place,
+    and the selection itself.
+    """
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+        self.selection: Iterable = []
+        self.present_selection: int = 0
+        self.option_visual_base_height: int = 0
+
+    def confirm_selection(self):
+        """
+        If you're seeing this something has gone wrong and this function is not
+        overridden for the subclass. Will return NotImplementedError.
+        """
+        raise NotImplementedError()
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+        if key == tcod.event.K_UP:
+            self.present_selection = max(0, self.present_selection - 1)
+        elif key == tcod.event.K_DOWN:
+            self.present_selection = min(len(self.selection) - 1, self.present_selection + 1)
+        elif key in CONFIRM_KEYS:
+            return self.confirm_selection()
+        else:
+            return super().ev_keydown(event)
 
 
 class LevelUpEventHandler(OptionSelectionHandler):
@@ -449,53 +496,7 @@ class LevelUpEventHandler(OptionSelectionHandler):
             return self.on_exit()
 
 
-class SelectIndexHandler(AskUserEventHandler):
-    """Handles asking the user for an index on the map."""
-
-    def __init__(self, engine: Engine):
-        """Sets the cursor to the player when this handler is constructed."""
-        super().__init__(engine)
-        player = self.engine.player
-        engine.cursor_location = player.x, player.y
-
-    def on_render(self, console: tcod.Console) -> None:
-        """Highlight the tile under the cursor."""
-        super().on_render(console)
-        x, y = self.engine.cursor_location
-        console.tiles_rgb["bg"][x, y] = color.white
-        console.tiles_rgb["fg"][x, y] = color.black
-
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
-        """Check for key movement or confirmation keys."""
-        key = event.sym
-        if key in MOVE_KEYS:
-            modifier = 1    # Holding modifier keys will speed up key movement.
-            if event.mod & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
-                modifier *= 5
-            if event.mod & (tcod.event.KMOD_LCTRL | tcod.event.KMOD_RCTRL):
-                modifier *= 10
-            if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
-                modifier *= 20
-
-            x, y = self.engine.cursor_location
-            dx, dy = MOVE_KEYS[key]
-            x += dx * modifier
-            y += dy * modifier
-            # Clamp the cursor index to the map size.
-            x = max(0, min(x, self.engine.game_map.width - 1))
-            y = max(0, min(y, self.engine.game_map.height - 1))
-            self.engine.cursor_location = x, y
-            return None
-        elif key in CONFIRM_KEYS:
-            return self.on_index_selected(*self.engine.cursor_location)
-        return super().ev_keydown(event)
-
-    def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
-        """Called when an index is selected."""
-        raise NotImplementedError()
-
-
-class LookHandler(SelectIndexHandler):
+class LookHandler(SelectScreenIndexHandler):
     """Lets the player look around using the keyboard."""
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
@@ -503,7 +504,7 @@ class LookHandler(SelectIndexHandler):
         return MainGameEventHandler(self.engine)
 
 
-class SingleRangedAttackHandler(SelectIndexHandler):
+class SingleRangedAttackHandler(SelectScreenIndexHandler):
     """Handles targeting a single enemy. Only the enemy selected will be affected"""
 
     def __init__(
@@ -517,7 +518,7 @@ class SingleRangedAttackHandler(SelectIndexHandler):
         return self.callback((x, y))
 
 
-class AreaRangedAttackHandler(SelectIndexHandler):
+class AreaRangedAttackHandler(SelectScreenIndexHandler):
     """Handles targeting an area within a given radius. Any entity within the area will be affected."""
 
     def __init__(
@@ -565,10 +566,13 @@ class InventoryEventHandler(OptionSelectionHandler):
         Render an inventory menu, which displays the items in the inventory.
         Will move to a different position based on where the player is located, they are.
         """
-        super().on_render(console)
-        number_of_items_in_inventory = len(self.engine.player.inventory.items)
 
-        height = number_of_items_in_inventory + 2
+        self.selection = list(enumerate(self.engine.player.inventory.items))
+
+        super().on_render(console)
+        number_of_items_in_inventory = len(self.selection)
+
+        height = min(number_of_items_in_inventory + 2, console.height)
 
         if height <= 3:
             height = 3
@@ -594,38 +598,31 @@ class InventoryEventHandler(OptionSelectionHandler):
         )
 
         if number_of_items_in_inventory > 0:
-            for i, item in enumerate(self.engine.player.inventory.items):
-                item_key = chr(ord("a") + i)
-
+            for i, item in self.selection:
                 is_equipped = self.engine.player.equipment.item_is_equipped(item)
 
-                item_string = f"({item_key}) {item.name}"
+                item_string = f"{item.name}"
 
                 if is_equipped:
                     item_string = f"{item_string} (E)"
 
-                console.print(x + 1, y + i + 1, item_string)
+                console.print(
+                    x + 1,
+                    y + i + 1,
+                    item_string,
+                    fg = (color.maroon if i == self.present_selection else color.menu_text),
+                    bg = (color.white if i == self.present_selection else color.black)
+                )
 
         else:
             console.print(x + 1, y + 1, "(Empty)")
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
-        player = self.engine.player
-        key = event.sym
-        index = key - tcod.event.K_a
-
-        if 0 <= index <= 26:
-            try:
-                selected_item = player.inventory.items[index]
-            except IndexError:
-                self.engine.message_log.add_message("Invalid entry", color.invalid)
-                return None
-            return self.on_item_selected(selected_item)
-        return super().ev_keydown(event)
-
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Called when the user selects a valid item"""
         raise NotImplementedError
+
+    def confirm_selection(self):
+        return self.on_item_selected(self.engine.player.inventory.items[self.present_selection])
 
 
 class InventoryActivateHandler(InventoryEventHandler):
