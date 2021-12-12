@@ -8,6 +8,7 @@ from tcod.console import Console
 from tcod.map import compute_fov
 
 import exceptions
+import render_standards
 from message_log import MessageLog
 import render_functions
 
@@ -46,13 +47,12 @@ class Engine:
     def render(self, console: Console) -> None:
         self.game_map.render(console)
 
-        self.message_log.render(console = console, x = 21, y = 45, width = 40, height = 5)
-
-        render_functions.render_bar(
+        self.message_log.render(
             console = console,
-            current_value = self.player.fighter.hp,
-            maximum_value = self.player.fighter.max_hp,
-            total_width = 20,
+            x = render_standards.message_log_x,
+            y = render_standards.message_log_y,
+            width = render_standards.message_log_width,
+            height = render_standards.message_log_height,
         )
 
         render_functions.render_dungeon_level(
@@ -66,6 +66,33 @@ class Engine:
             x = 21,
             y = 44,
             engine = self
+        )
+
+        render_functions.render_inventory_screen(
+            console = console,
+            engine = self,
+            x = render_standards.inventory_x,
+            y = render_standards.inventory_y,
+            width = render_standards.inventory_width,
+            height = render_standards.inventory_height,
+        )
+
+        render_functions.render_character_screen(
+            console = console,
+            engine = self,
+            x = render_standards.character_screen_x,
+            y = render_standards.character_screen_y,
+            width = render_standards.character_screen_width,
+            height = render_standards.character_screen_height
+        )
+
+        render_functions.render_bar(
+            console=console,
+            x=render_standards.character_screen_x + 1,
+            y=render_standards.character_screen_y + 2,
+            current_value=self.player.fighter.hp,
+            maximum_value=self.player.fighter.max_hp,
+            total_width=render_standards.character_screen_width - 2,
         )
 
     def save_as(self, filename: str) -> None:
