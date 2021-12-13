@@ -25,7 +25,7 @@ class Engine:
         self.cursor_location = (0, 0)
         self.player = player
 
-    def handle_enemy_turns(self) -> None:
+    def handle_entity_turns(self) -> None:
         for entity in set(self.game_map.actors) - {self.player}:
             if entity.ai:
                 try:

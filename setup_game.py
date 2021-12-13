@@ -11,6 +11,7 @@ import tcod
 import color
 import render_standards
 from engine import Engine
+from debug_engine import DebugEngine
 import entity_factories
 from game_map import GameWorld
 import input_handlers
