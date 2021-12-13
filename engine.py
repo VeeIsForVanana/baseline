@@ -24,6 +24,9 @@ class Engine:
         self.message_log = MessageLog()
         self.cursor_location = (0, 0)
         self.player = player
+        self.turn_counter = 0
+
+    turn_counter: int
 
     def handle_entity_turns(self) -> None:
         for entity in set(self.game_map.actors) - {self.player}:

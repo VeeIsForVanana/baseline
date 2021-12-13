@@ -1,3 +1,4 @@
+import render_order
 from components.ai import HostileEnemy, BaseAI
 from components import consumable, equippable
 from components.equipment import Equipment
@@ -22,6 +23,7 @@ debug_player = Entity(
     char = "@",
     color = color.dark_gray,
     name = "Debug Player",
+    render_order = render_order.RenderOrder.ACTOR
 )
 
 orc = Actor(

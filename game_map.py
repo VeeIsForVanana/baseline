@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Iterator, Iterable, TYPE_CHECKING
+from typing import Optional, Iterator, Iterable, TYPE_CHECKING, Generator, Tuple
 
 import numpy as np  # type: ignore
 from tcod.console import Console
@@ -28,6 +28,9 @@ class GameMap:
         self.explored = np.full(
             (width, height), fill_value = False, order = "F"
         )   # Tiles the player has seen before
+        self.tile_exists = np.full(
+            (width, height), fill_value = True, order = "F"
+        )
 
         self.downstairs_location = (0, 0)
 
@@ -76,7 +79,7 @@ class GameMap:
         """Return True if x and y are inside of the bounds of this map"""
         return 0 <= x < self.width and 0 <= y < self.height
 
-    def render(self, console: Console) -> None:
+    def render(self, console: Console, debug_mode: bool = False) -> None:
         """
         Renders the map.
 
@@ -84,9 +87,12 @@ class GameMap:
         If it isn't, but it's in the "explored array", then draw it with the 'dark' colors.
         Otherwise, the default is "SHROUD".
         """
+
         console.rgb[0 : self.width, 0 : self.height] = np.select(
-            condlist = [self.visible, self.explored],
-            choicelist = [self.tiles["light"], self.tiles["dark"]],
+            condlist = ([self.visible, self.explored] if not debug_mode else
+                        [self.tile_exists]),
+            choicelist = ([self.tiles["light"], self.tiles["dark"]] if not debug_mode else
+                          [self.tiles["light"]]),
             default = tile_types.SHROUD,
         )
 
@@ -95,7 +101,7 @@ class GameMap:
         )
 
         for entity in entities_sorted_for_rendering:
-            if self.visible[entity.x, entity.y]:
+            if self.visible[entity.x, entity.y] or debug_mode:
                 console.print(
                     entity.x, entity.y, entity.char, fg = entity.color
                 )

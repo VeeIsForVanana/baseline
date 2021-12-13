@@ -36,7 +36,8 @@ def new_game(debug: bool = False) -> Engine:
 
     player = copy.deepcopy(entity_factories.player)
 
-    engine = (Engine(player=player) if not debug else DebugEngine(player=player))
+    engine = (Engine(player=player) if not debug else
+              DebugEngine(player=entity_factories.debug_player))
 
     engine.game_world = GameWorld(
         engine=engine,
@@ -126,10 +127,10 @@ class MainMenu(input_handlers.BaseEventHandler):
             elif self.present_selection == 2:
                 raise SystemExit()
             elif self.present_selection == 3:
-                return input_handlers.MainGameEventHandler(new_game(debug=True))
+                return input_handlers.DebugModeEventHandler(new_game(debug=True))
             elif self.present_selection == 4:
                 try:
-                    return input_handlers.MainGameEventHandler(load_game("debug.sav"))
+                    return input_handlers.DebugModeEventHandler(load_game("debug.sav"))
                 except FileNotFoundError:
                     return input_handlers.PopupMessage(self, "No saved game to load.")
                 except Exception as exc:
