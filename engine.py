@@ -79,7 +79,7 @@ class Engine:
             height = render_standards.character_screen_height
         )
 
-    def save_as(self, filename: str) -> None:
+    def save_as(self, filename: str = "savegame.sav") -> None:
         """Save this Engine instance as a compressed file."""
         save_data = lzma.compress(pickle.dumps(self))
         with open(filename, "wb") as f:

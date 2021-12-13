@@ -21,7 +21,7 @@ import render_functions
 background_image = tcod.image.load("menu_background.png")[:, :, :3]
 
 
-def new_game() -> Engine:
+def new_game(debug: bool = False) -> Engine:
     """Return a brand new game session as an Engine instance."""
     map_width = render_standards.map_width
     map_height = render_standards.map_height
@@ -36,7 +36,7 @@ def new_game() -> Engine:
 
     player = copy.deepcopy(entity_factories.player)
 
-    engine = Engine(player=player)
+    engine = (Engine(player=player) if not debug else DebugEngine(player=player))
 
     engine.game_world = GameWorld(
         engine=engine,
@@ -69,7 +69,7 @@ class MainMenu(input_handlers.BaseEventHandler):
     def __init__(self, console: tcod.Console):
         """Initializes the MainMenu with a console and cursor position"""
         self.console = console
-        self.selection = list(enumerate(["New Game", "Continue Game", "Quit",]))
+        self.selection = list(enumerate(["New Game", "Continue Game", "Quit", "DEBUG MODE", "LOAD DEBUG"]))
         self.present_selection = 0
 
     def on_render(self) -> None:
@@ -125,3 +125,13 @@ class MainMenu(input_handlers.BaseEventHandler):
                     return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
             elif self.present_selection == 2:
                 raise SystemExit()
+            elif self.present_selection == 3:
+                return input_handlers.MainGameEventHandler(new_game(debug=True))
+            elif self.present_selection == 4:
+                try:
+                    return input_handlers.MainGameEventHandler(load_game("debug.sav"))
+                except FileNotFoundError:
+                    return input_handlers.PopupMessage(self, "No saved game to load.")
+                except Exception as exc:
+                    traceback.print_exc()   # Print to stderr.
+                    return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")

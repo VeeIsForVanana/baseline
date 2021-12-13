@@ -106,7 +106,10 @@ class PopupMessage(BaseEventHandler):
 
     def on_render(self, console: tcod.Console) -> None:
         """Render the parent and dim the result, then print the message on top."""
-        self.parent.on_render(console)
+        try:
+            self.parent.on_render(console)
+        except TypeError:
+            self.parent.on_render()
         console.tiles_rgb["fg"] //= 8
         console.tiles_rgb["bg"] //= 8
 
