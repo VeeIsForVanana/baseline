@@ -64,6 +64,8 @@ class Fighter(BaseComponent):
         self.parent.ai = None
         self.parent.name = f"Remains of {self.parent.name}"
         self.parent.render_order = RenderOrder.CORPSE
+        self.parent.gamemap.remove_entity_id(self.parent.entity_id)
+        self.parent.gamemap.new_entity_id(self.parent)
 
         self.engine.message_log.add_message(death_message, death_message_color)
 

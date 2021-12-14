@@ -44,7 +44,7 @@ class GameMap:
     @property
     def next_open_id(self) -> int:
         for i in range(10000):
-            if i not in self.entity_ids:
+            if self.entity_ids.get(i, None) is None:
                 return i
         raise exceptions.Impossible("Cannot assign new entity ID")
 
@@ -74,9 +74,10 @@ class GameMap:
         self.entity_ids[entity.entity_id] = entity
         return True
 
-    def remove_entity_id(self, entity_id: int) -> bool:
-        """Removes entity and associated entity ID from dictionary."""
-        self.entity_ids.pop(entity_id)
+    def remove_entity_id(self, entity: Entity) -> None:
+        """Removes entity from associated entity ID from dictionary."""
+        old_id = entity.entity_id
+        self.entity_ids[old_id] = None
 
     def get_blocking_entity_at_location(
             self, location_x: int, location_y: int

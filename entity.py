@@ -60,19 +60,22 @@ class Entity:
         clone.y = y
         clone.parent = gamemap
         gamemap.entities.add(clone)
+        gamemap.new_entity_id(self)
 
         return clone
 
     def place(self, x: int, y: int, gamemap: Optional[GameMap] = None) -> None:
-        """Places this entity at a new location. Handles moving across GameMaps."""
+        """Places this entity at a new location. Handles moving across GameMaps. Does not generate new entity."""
         self.x = x
         self.y = y
         if gamemap:
             if hasattr(self, "parent"):    # Possibly uninitialized.
                 if self.parent is self.gamemap:
                     self.gamemap.entities.remove(self)
+                    self.gamemap.remove_entity_id(self.entity_id)
             self.parent = gamemap
             gamemap.entities.add(self)
+            gamemap.new_entity_id(self)
 
     def distance(self, x: int, y: int) -> float:
         """
