@@ -47,6 +47,7 @@ class Entity:
             # If parent isn't provided now then it will be set later.
             self.parent = parent
             parent.entities.add(self)
+        self.entity_id = None
 
     @property
     def gamemap(self) -> GameMap:
@@ -59,6 +60,7 @@ class Entity:
         clone.y = y
         clone.parent = gamemap
         gamemap.entities.add(clone)
+
         return clone
 
     def place(self, x: int, y: int, gamemap: Optional[GameMap] = None) -> None:

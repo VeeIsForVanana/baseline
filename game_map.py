@@ -5,6 +5,7 @@ from typing import Optional, Iterator, Iterable, TYPE_CHECKING, Generator, Tuple
 import numpy as np  # type: ignore
 from tcod.console import Console
 
+import exceptions
 from entity import Actor, Item
 import tile_types
 
@@ -32,11 +33,20 @@ class GameMap:
             (width, height), fill_value = True, order = "F"
         )
 
+        self.entity_ids: dict[int: Entity] = {}
+
         self.downstairs_location = (0, 0)
 
     @property
     def gamemap(self) -> GameMap:
         return self
+
+    @property
+    def next_open_id(self) -> int:
+        for i in range(10000):
+            if i not in self.entity_ids:
+                return i
+        raise exceptions.Impossible("Cannot assign new entity ID")
 
     @property
     def actors(self) -> Iterator[Actor]:
@@ -54,6 +64,19 @@ class GameMap:
             for entity in self.entities
             if isinstance(entity, Item)
         )
+
+    def new_entity_id(self, entity: Entity) -> bool:
+        """Assigns entity IDs and dictionary space to an entity and return True, if Impossible return False"""
+        try:
+            entity.entity_id = self.next_open_id
+        except exceptions.Impossible:
+            return False
+        self.entity_ids[entity.entity_id] = entity
+        return True
+
+    def remove_entity_id(self, entity_id: int) -> bool:
+        """Removes entity and associated entity ID from dictionary."""
+        self.entity_ids.pop(entity_id)
 
     def get_blocking_entity_at_location(
             self, location_x: int, location_y: int
