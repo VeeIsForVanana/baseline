@@ -24,8 +24,11 @@ class Engine:
         self.message_log = MessageLog()
         self.cursor_location = (0, 0)
         self.player = player
+        self.turn_counter = 0
 
-    def handle_enemy_turns(self) -> None:
+    turn_counter: int
+
+    def handle_entity_turns(self) -> None:
         for entity in set(self.game_map.actors) - {self.player}:
             if entity.ai:
                 try:
@@ -79,7 +82,7 @@ class Engine:
             height = render_standards.character_screen_height
         )
 
-    def save_as(self, filename: str) -> None:
+    def save_as(self, filename: str = "savegame.sav") -> None:
         """Save this Engine instance as a compressed file."""
         save_data = lzma.compress(pickle.dumps(self))
         with open(filename, "wb") as f:

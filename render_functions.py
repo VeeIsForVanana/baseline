@@ -5,11 +5,12 @@ from typing import Tuple, TYPE_CHECKING, Iterable
 import color
 import textwrap
 
-import render_standards
+import render_standards as r_std
 
 if TYPE_CHECKING:
     from tcod import Console
     from engine import Engine
+    from debug_engine import DebugEngine
     from game_map import GameMap
 
 def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
@@ -87,10 +88,11 @@ def render_inventory_screen(
                 inventory_dict[instance.name] = inventory_dict.get(instance.name, 0) + 1
 
         for i, instance in enumerate(inventory_dict.keys()):
+            text = instance.ljust(r_std.readout_left_width)[:r_std.readout_left_width]
             console.print(
-                x = x + render_standards.padding_standard,
-                y = y + render_standards.padding_standard + i,
-                string = f"{instance} - {inventory_dict[instance]}",
+                x = x + r_std.padding_standard,
+                y = y + r_std.padding_standard + i,
+                string = f"{text}:{str(inventory_dict[instance]).rjust(r_std.data_width)[:r_std.data_width]}",
                 fg = color.menu_text,
             )
 
@@ -109,7 +111,7 @@ def render_character_screen(
         x = x,
         y = y,
         width = width,
-        height = (height if not in_use else render_standards.screen_height),
+        height = (height if not in_use else r_std.screen_height),
         title = "[c]haracter screen",
         fg = color.menu_text,
         bg = (color.inactive_window_bg if not in_use else color.black)
@@ -117,30 +119,30 @@ def render_character_screen(
     if not in_use:
         render_bar(
             console=console,
-            x = x + render_standards.padding_standard,
-            y = y + render_standards.padding_standard,
+            x = x + r_std.padding_standard,
+            y = y + r_std.padding_standard,
             current_value = engine.player.fighter.hp,
             maximum_value = engine.player.fighter.max_hp,
-            total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+            total_width = r_std.character_screen_width - r_std.padding_standard * 2,
         )
 
         render_bar(
             console = console,
-            x = x + render_standards.padding_standard,
-            y = (y + render_standards.padding_standard) + 3,
+            x = x + r_std.padding_standard,
+            y = (y + r_std.padding_standard) + 3,
             current_value = engine.player.fighter.power,
             maximum_value = 100,
-            total_width = render_standards.character_screen_width - render_standards.padding_standard * 2,
+            total_width = r_std.character_screen_width - r_std.padding_standard * 2,
             name = "attack"
         )
 
         render_bar(
             console=console,
-            x=x + render_standards.padding_standard,
-            y=(y + render_standards.padding_standard) + 5,
+            x=x + r_std.padding_standard,
+            y=(y + r_std.padding_standard) + 5,
             current_value=engine.player.fighter.defense,
             maximum_value=100,
-            total_width=render_standards.character_screen_width - render_standards.padding_standard * 2,
+            total_width=r_std.character_screen_width - r_std.padding_standard * 2,
             name = "defense"
         )
 
@@ -149,22 +151,49 @@ def render_character_screen(
         equipment_info_offset = 8
         if weapon or armor:
             console.print(
-                x=x + render_standards.padding_standard,
-                y=(y + render_standards.padding_standard) + equipment_info_offset,
+                x=x + r_std.padding_standard,
+                y=(y + r_std.padding_standard) + equipment_info_offset,
                 string = "Equipment"
             )
 
             console.print(
-                x=x + render_standards.padding_standard + 2,
-                y=(y + render_standards.padding_standard) + equipment_info_offset + 1,
+                x=x + r_std.padding_standard + 2,
+                y=(y + r_std.padding_standard) + equipment_info_offset + 1,
                 string=f"Weapon: {weapon.name if weapon else 'None equipped'}"
             )
 
             console.print(
-                x=x + render_standards.padding_standard + 2,
-                y=(y + render_standards.padding_standard) + equipment_info_offset + 2,
+                x=x + r_std.padding_standard + 2,
+                y=(y + r_std.padding_standard) + equipment_info_offset + 2,
                 string=f"Armor: {armor.name if armor else 'None equipped'}"
             )
+
+def render_debug_info_readout(
+    console: Console, x: int, y: int, width: int, height: int, engine: DebugEngine, in_use: bool = False,
+):
+
+    debug_info = engine.debug_info
+
+    console.draw_frame(
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        title = "DEBUG READOUT"
+    )
+
+    for index, i in enumerate(debug_info.keys()):
+        text: str = i.ljust(r_std.readout_left_width)[:r_std.readout_left_width]
+        value: str = str(debug_info.get(i, None))
+        console.print(
+            x = x + r_std.padding_standard,
+            y = y + r_std.padding_standard + index,
+            string = f"{text}"
+                     f":"
+                     f"{value.rjust(r_std.data_width)[:r_std.data_width]}"
+        )
+
+
 
 def wrap(string: str, width: int) -> Iterable[str]:
     """Return a wrapped text message."""

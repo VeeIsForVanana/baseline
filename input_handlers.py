@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union, List, Iterable
+from typing import Callable, Tuple, Optional, TYPE_CHECKING, Union, Iterable
 
 import tcod.event
 
@@ -13,7 +13,8 @@ from actions import (
     BumpAction,
     PickupAction,
     WaitAction,
-    DropItem
+    DropItem,
+    MovementAction
 )
 import color
 import exceptions
@@ -106,7 +107,10 @@ class PopupMessage(BaseEventHandler):
 
     def on_render(self, console: tcod.Console) -> None:
         """Render the parent and dim the result, then print the message on top."""
-        self.parent.on_render(console)
+        try:
+            self.parent.on_render(console)
+        except TypeError:
+            self.parent.on_render()
         console.tiles_rgb["fg"] //= 8
         console.tiles_rgb["bg"] //= 8
 
@@ -134,13 +138,14 @@ class EventHandler(BaseEventHandler):
         if isinstance(action_or_state, BaseEventHandler):
             return action_or_state
         if self.handle_action(action_or_state):
+            self.engine.turn_counter += 1
             # A valid action was performed.
             if not self.engine.player.is_alive:
                 # THe player was killed sometime during or after the action.
                 return GameOverEventHandler(self.engine)
             elif self.engine.player.level.requires_level_up:
                 return LevelUpEventHandler(self.engine)
-            return MainGameEventHandler(self.engine)    # Return to the main handler.
+            return MainGameEventHandler(self.engine)   # Return to the main handler.
         return self
 
     def handle_action(self, action: Optional[ActionOrHandler]) -> bool:
@@ -158,7 +163,7 @@ class EventHandler(BaseEventHandler):
             self.engine.message_log.add_message(exc.args[0], color.impossible)
             return False    # Skip enemy turn on exceptions
 
-        self.engine.handle_enemy_turns()
+        self.engine.handle_entity_turns()
 
         self.engine.update_fov()
 
@@ -207,6 +212,53 @@ class MainGameEventHandler(EventHandler):
             return CharacterScreenEventHandler(self.engine)
         elif key == tcod.event.K_SLASH:
             return LookHandler(self.engine)
+
+        # No valid keypress
+        return action
+
+class DebugModeEventHandler(EventHandler):
+
+    def __init__(self, engine: Engine):
+        super().__init__(engine)
+
+    def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
+        """Handle events for input handlers with an engine."""
+        action_or_state = self.dispatch(event)
+        if isinstance(action_or_state, BaseEventHandler):
+            return action_or_state
+        if self.handle_action(action_or_state):
+            self.engine.turn_counter += 1
+            return self
+        return self
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+
+        action: Optional[ActionOrHandler] = None
+
+        key = event.sym
+        modifier = event.mod
+
+        player = self.engine.player
+
+        if key == tcod.event.K_PERIOD and modifier & (
+            tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
+        ):
+            return actions.TakeStairsAction(player)
+
+        if key in MOVE_KEYS:
+            dx, dy = MOVE_KEYS[key]
+            action = MovementAction(player, dx, dy)
+        elif key in WAIT_KEYS:
+            action = WaitAction(player)
+        elif key == tcod.event.K_ESCAPE:
+            raise SystemExit
+        elif key == tcod.event.K_SLASH:
+            return LookHandler(self.engine)
+
+        if key == tcod.event.K_PERIOD and modifier & (
+            tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
+        ):
+            return actions.TakeStairsAction(player)
 
         # No valid keypress
         return action

@@ -1,10 +1,12 @@
+import render_order
 from components.ai import HostileEnemy, BaseAI
 from components import consumable, equippable
 from components.equipment import Equipment
 from components.fighter import Fighter
 from components.inventory import Inventory
 from components.level import Level
-from entity import Actor, Item
+from entity import Actor, Item, Entity
+import color
 
 player = Actor(
     char="@",
@@ -15,6 +17,13 @@ player = Actor(
     fighter = Fighter(hp = 30, base_defense = 1, base_power = 2),
     inventory = Inventory(capacity = 26),
     level = Level(level_up_base = 200)
+)
+
+debug_player = Entity(
+    char = "@",
+    color = color.dark_gray,
+    name = "Debug Player",
+    render_order = render_order.RenderOrder.ACTOR
 )
 
 orc = Actor(

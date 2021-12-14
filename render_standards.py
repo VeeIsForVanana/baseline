@@ -39,3 +39,8 @@ message_log_height = screen_height - message_log_y
 # Padding Standard (Distance between border of frame and content)
 
 padding_standard = 2
+
+# Data Column Standard (Standard Width of Data Columns containing ints e.g. inventory counts)
+
+data_width = 10
+readout_left_width = inventory_width - ((padding_standard * 2) + (data_width + 1))
