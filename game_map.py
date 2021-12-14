@@ -74,10 +74,9 @@ class GameMap:
         self.entity_ids[entity.entity_id] = entity
         return True
 
-    def remove_entity_id(self, entity: Entity) -> None:
+    def remove_entity_id(self, entity_id: int) -> None:
         """Removes entity from associated entity ID from dictionary."""
-        old_id = entity.entity_id
-        self.entity_ids[old_id] = None
+        self.entity_ids[entity_id] = None
 
     def get_blocking_entity_at_location(
             self, location_x: int, location_y: int
