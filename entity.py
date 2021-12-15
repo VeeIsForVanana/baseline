@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import math
-from typing import Optional, Tuple, TypeVar, TYPE_CHECKING, Union, Type
+from typing import Optional, Tuple, TypeVar, TYPE_CHECKING, Union, Type, List
 
 from render_order import RenderOrder
 
@@ -126,6 +126,10 @@ class Actor(Entity):
 
         self.level = level
         self.level.parent = self
+
+    @property
+    def attributes(self) -> List:
+        return self.fighter.attributes
 
     @property
     def is_alive(self) -> bool:

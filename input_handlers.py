@@ -279,9 +279,10 @@ class GameOverEventHandler(EventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         if event.sym == tcod.event.K_ESCAPE:
             self.on_quit()
-        if event.sym == tcod.event.K_v:
-
+        elif event.sym == tcod.event.K_v:
             return HistoryViewer(self.engine, self)
+        elif event.sym == tcod.event.K_SLASH:
+            return LookHandler(self.engine)
 
 
 class HistoryViewer(EventHandler):
@@ -505,7 +506,7 @@ class LevelUpEventHandler(OptionSelectionHandler):
         super().on_render(console)
 
         self.selection = list(enumerate([
-            ["Max HP", 20, self.engine.player.fighter.max_hp],
+            ["Max HP", 20, self.engine.player.fighter.hp_attr],
             ["Base Attack", 1, self.engine.player.fighter.base_power],
             ["Base Defense", 1, self.engine.player.fighter.base_defense],
         ]))
@@ -534,7 +535,8 @@ class LevelUpEventHandler(OptionSelectionHandler):
             console.print(
                 x = x + 1,
                 y = self.option_visual_base_height + i,
-                string = f"+{option[1]} {option[0]} (from the current value {option[2]})",
+                string = f"+{option[1]} {option[0]} "
+                         f"(from the current value {option[2].max if option[0] == 'Max HP' else option[2].value})",
                 fg = (color.selection if i is self.present_selection else color.menu_text),
                 bg = (color.white if i is self.present_selection else None)
             )
@@ -543,11 +545,14 @@ class LevelUpEventHandler(OptionSelectionHandler):
         player = self.engine.player
 
         if self.present_selection == 0:
-            player.level.increase_max_hp(amount = 20)
+            player.level.increase_max_hp()
+            player.fighter.hp_attr.max(20, True)
         elif self.present_selection == 1:
-            player.level.increase_power(amount = 1)
+            player.level.increase_power()
+            player.fighter.attributes[self.present_selection].add_to_value(1)
         else:
-            player.level.increase_defense(amount = 1)
+            player.level.increase_defense()
+            player.fighter.attributes[self.present_selection].add_to_value(1)
 
         if not player.level.requires_level_up:
             return self.on_exit()
@@ -555,6 +560,11 @@ class LevelUpEventHandler(OptionSelectionHandler):
 
 class LookHandler(SelectScreenIndexHandler):
     """Lets the player look around using the keyboard."""
+
+    def __init__(self, engine: Engine, parent_handler: Optional[BaseEventHandler] = None):
+        super().__init__(engine)
+        if parent_handler is None:
+            parent_handler = MainGameEventHandler(engine)
 
     def on_render(self, console: tcod.Console) -> None:
         super().on_render(console)
@@ -567,7 +577,7 @@ class LookHandler(SelectScreenIndexHandler):
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
         """Return to main handler."""
-        return MainGameEventHandler(self.engine)
+        return parent_handler
 
 
 class SingleRangedAttackHandler(SelectScreenIndexHandler):
