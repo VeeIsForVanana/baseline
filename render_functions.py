@@ -117,38 +117,22 @@ def render_character_screen(
         bg = (color.inactive_window_bg if not in_use else color.black)
     )
     if not in_use:
-        render_bar(
-            console=console,
-            x = x + r_std.padding_standard,
-            y = y + r_std.padding_standard,
-            current_value = engine.player.fighter.hp,
-            maximum_value = engine.player.fighter.max_hp,
-            total_width = r_std.character_screen_width - r_std.padding_standard * 2,
-        )
-
-        render_bar(
-            console = console,
-            x = x + r_std.padding_standard,
-            y = (y + r_std.padding_standard) + 3,
-            current_value = engine.player.fighter.power,
-            maximum_value = 100,
-            total_width = r_std.character_screen_width - r_std.padding_standard * 2,
-            name = "attack"
-        )
-
-        render_bar(
-            console=console,
-            x=x + r_std.padding_standard,
-            y=(y + r_std.padding_standard) + 5,
-            current_value=engine.player.fighter.defense,
-            maximum_value=100,
-            total_width=r_std.character_screen_width - r_std.padding_standard * 2,
-            name = "defense"
-        )
+        final_spacing: int = 0
+        for spacing, attribute in enumerate(engine.player.fighter.attributes):
+            render_bar(
+                console=console,
+                x = x + r_std.padding_standard,
+                y = y + r_std.padding_standard + (spacing * 3),
+                current_value = attribute.value,
+                maximum_value = attribute.max,
+                total_width = r_std.character_screen_width - r_std.padding_standard * 2,
+                name = attribute.name
+            )
+            final_spacing = ((spacing + 1) * 3)
 
         weapon, armor = engine.player.equipment.weapon, engine.player.equipment.armor
 
-        equipment_info_offset = 8
+        equipment_info_offset = final_spacing
         if weapon or armor:
             console.print(
                 x=x + r_std.padding_standard,

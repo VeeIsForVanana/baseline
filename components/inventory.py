@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import List, TYPE_CHECKING
 
 from components.base_component import BaseComponent
@@ -21,6 +22,12 @@ class Inventory(BaseComponent):
         self.items.remove(item)
         if item.equippable and self.parent.equipment.item_is_equipped(item):
             self.parent.equipment.toggle_equip(item)
-        item.place(self.parent.x, self.parent.y, self.gamemap)
-
-        self.engine.message_log.add_message(f"You dropped the {item.name}.")
+        if self.parent.is_alive:
+            item.place(self.parent.x, self.parent.y, self.gamemap)
+            self.engine.message_log.add_message(f"{'You' if self.parent.entity_id == 0 else self.parent.name}"
+                                                f" dropped {item.name}.")
+        else:
+            dx, dy = random.randint(-1, 1), random.randint(-1, 1)
+            item.place(self.parent.x + dx, self.parent.y + dy, self.gamemap)
+            self.engine.message_log.add_message(f"{'You' if self.parent.entity_id == 0 else self.parent.name}"
+                                                f" dropped {item.name} randomly about as they died.")
